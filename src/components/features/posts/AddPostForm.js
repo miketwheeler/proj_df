@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 
-import { postAdded } from "./postSlice";
 import { selectAllUsers } from "../users/usersSlice";
+import { useNavigate } from "react-router-dom";
+import { useAddNewPostMutation } from "./postsSlice";
 
 const AddPostForm = () => {
-    const dispatch = useDispatch()
+    const [addNewPost, { isLoading }] = useAddNewPostMutation()
+
+    const navigate = useNavigate()
 
     const [title, setTitle] = useState('')
     const [content, setContent] = useState('')
@@ -17,17 +20,23 @@ const AddPostForm = () => {
     const onContentChanged = e => setContent(e.target.value)
     const onAuthorChanged = e => setUserId(e.target.value)
 
-    const onSavePostClicked = () => {
-        if (title && content) {
-            dispatch(
-                postAdded(title, content, userId)
-            )
-            setTitle('')
-            setContent('')
+
+    const canSave = [title, content, userId].every(Boolean) && !isLoading;
+
+    const onSavePostClicked = async () => {
+        if (canSave) {
+            try {
+                await addNewPost({ title, body: content, userId }).unwrap()
+
+                setTitle('')
+                setContent('')
+                setUserId('')
+                navigate('/')
+            } catch (err) {
+                console.error('Failed to save the post', err)
+            }
         }
     }
-
-    const canSave = Boolean(title) && Boolean(content) && Boolean(userId)
 
     const usersOptions = users.map(user => (
         <option key={user.id} value={user.id}>
